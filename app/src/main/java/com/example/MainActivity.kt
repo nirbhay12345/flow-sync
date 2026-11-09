@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.repository.GuestProductivityRepository
+import com.example.data.repository.ProductivityDataSource
 import com.example.data.repository.ProductivityRepository
 import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOut
@@ -98,10 +100,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoot() {
     var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+    var isGuestMode by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val listener = FirebaseAuth.AuthStateListener { auth ->
             currentUser = auth.currentUser
+            if (auth.currentUser != null) {
+                isGuestMode = false
+            }
         }
         Firebase.auth.addAuthStateListener(listener)
         onDispose {
@@ -109,19 +115,37 @@ fun AppRoot() {
         }
     }
 
-    if (currentUser == null) {
-        AuthScreen(
-            onAuthSuccess = { currentUser = Firebase.auth.currentUser }
-        )
-    } else {
+    if (currentUser != null) {
         val uid = currentUser!!.uid
         key(uid) {
             MainFeatureScreen(
                 currentUserId = uid,
                 userEmail = currentUser?.email ?: "user@flowpulse.app",
-                userDisplayName = currentUser?.displayName ?: "Champion"
+                userDisplayName = currentUser?.displayName ?: "Champion",
+                isGuestMode = false,
+                onExitGuest = { isGuestMode = false }
             )
         }
+    } else if (isGuestMode) {
+        key("guest_session") {
+            MainFeatureScreen(
+                currentUserId = "guest_user",
+                userEmail = "Guest Mode (Offline)",
+                userDisplayName = "Guest",
+                isGuestMode = true,
+                onExitGuest = { isGuestMode = false }
+            )
+        }
+    } else {
+        AuthScreen(
+            onAuthSuccess = {
+                currentUser = Firebase.auth.currentUser
+                isGuestMode = false
+            },
+            onGuestLogin = {
+                isGuestMode = true
+            }
+        )
     }
 }
 
@@ -130,14 +154,22 @@ fun AppRoot() {
 fun MainFeatureScreen(
     currentUserId: String,
     userEmail: String,
-    userDisplayName: String
+    userDisplayName: String,
+    isGuestMode: Boolean = false,
+    onExitGuest: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
-    val repository = remember(currentUserId) { ProductivityRepository(context) }
+    val repository: ProductivityDataSource = remember(currentUserId, isGuestMode) {
+        if (isGuestMode) {
+            GuestProductivityRepository()
+        } else {
+            ProductivityRepository(context)
+        }
+    }
     val viewModel: ProductivityViewModel = viewModel(
-        key = currentUserId,
+        key = "${currentUserId}_$isGuestMode",
         factory = ProductivityViewModelFactory(repository)
     )
 
@@ -163,7 +195,7 @@ fun MainFeatureScreen(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(CircleShape)
-                                .background(FlowCyan),
+                                .background(if (isGuestMode) FlowOrange else FlowCyan),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -182,6 +214,21 @@ fun MainFeatureScreen(
                             ),
                             color = MaterialTheme.colorScheme.onBackground
                         )
+                        if (isGuestMode) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(FlowOrange.copy(alpha = 0.2f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "Guest",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = FlowOrange
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {
@@ -191,7 +238,7 @@ fun MainFeatureScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Logout,
-                            contentDescription = "Sign Out",
+                            contentDescription = if (isGuestMode) "Exit Guest Mode" else "Sign Out",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -290,16 +337,31 @@ fun MainFeatureScreen(
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Sign Out") },
-            text = { Text("Signed in as $userEmail ($userDisplayName). Are you sure you want to sign out?") },
+            title = { Text(if (isGuestMode) "Exit Guest Mode" else "Sign Out") },
+            text = {
+                Text(
+                    if (isGuestMode) {
+                        "You are currently using FlowPulse in offline Guest Mode. You can sign in with your Google account anytime to back up your productivity metrics and sync across devices."
+                    } else {
+                        "Signed in as $userEmail ($userDisplayName). Are you sure you want to sign out?"
+                    }
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showSignOutDialog = false
-                        signOut(credentialManager, coroutineScope)
+                        if (isGuestMode) {
+                            onExitGuest()
+                        } else {
+                            signOut(credentialManager, coroutineScope)
+                        }
                     }
                 ) {
-                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        if (isGuestMode) "Exit to Sign In" else "Sign Out",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             },
             dismissButton = {

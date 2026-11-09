@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
-class ProductivityRepository(private val db: FirebaseFirestore) {
+class ProductivityRepository(private val db: FirebaseFirestore) : ProductivityDataSource {
 
     constructor(context: Context) : this(
         FirebaseFirestore.getInstance(
@@ -38,7 +38,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
     }
 
     // --- USER PROFILE ---
-    fun observeUserProfile(): Flow<UserProfile?> = flow {
+    override fun observeUserProfile(): Flow<UserProfile?> = flow {
         val uid = requireUserId()
         val path = "users/$uid"
         emitAll(
@@ -59,7 +59,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         )
     }
 
-    suspend fun saveUserProfile(displayName: String, dailyGoalMinutes: Int): Result<Unit> {
+    override suspend fun saveUserProfile(displayName: String, dailyGoalMinutes: Int): Result<Unit> {
         return try {
             val uid = requireUserId()
             val docRef = db.collection("users").document(uid)
@@ -91,7 +91,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
     }
 
     // --- TASKS ---
-    fun observeTasks(): Flow<List<Task>> = flow {
+    override fun observeTasks(): Flow<List<Task>> = flow {
         val uid = requireUserId()
         val path = "users/$uid/tasks"
         emitAll(
@@ -111,13 +111,13 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         )
     }
 
-    suspend fun createTask(
+    override suspend fun createTask(
         title: String,
-        description: String = "",
-        category: String = "Work",
-        priority: String = "medium",
-        estimatedPomodoros: Int = 2,
-        dueDate: String? = null
+        description: String,
+        category: String,
+        priority: String,
+        estimatedPomodoros: Int,
+        dueDate: String?
     ): Result<String> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("tasks").document()
@@ -150,7 +150,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun updateTask(task: Task): Result<Unit> {
+    override suspend fun updateTask(task: Task): Result<Unit> {
         val uid = requireUserId()
         require(task.id.isNotBlank()) { "Task ID cannot be blank" }
         val docRef = db.collection("users").document(uid).collection("tasks").document(task.id)
@@ -181,7 +181,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun deleteTask(taskId: String): Result<Unit> {
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("tasks").document(taskId)
         return try {
@@ -196,7 +196,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
     }
 
     // --- HABITS ---
-    fun observeHabits(): Flow<List<Habit>> = flow {
+    override fun observeHabits(): Flow<List<Habit>> = flow {
         val uid = requireUserId()
         val path = "users/$uid/habits"
         emitAll(
@@ -216,10 +216,10 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         )
     }
 
-    suspend fun createHabit(
+    override suspend fun createHabit(
         title: String,
-        category: String = "Health",
-        targetDaysPerWeek: Int = 7
+        category: String,
+        targetDaysPerWeek: Int
     ): Result<String> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("habits").document()
@@ -245,7 +245,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun toggleHabitForDate(habit: Habit, dateStr: String): Result<Unit> {
+    override suspend fun toggleHabitForDate(habit: Habit, dateStr: String): Result<Unit> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("habits").document(habit.id)
         val isAlreadyDone = habit.completedDates.contains(dateStr)
@@ -283,7 +283,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun deleteHabit(habitId: String): Result<Unit> {
+    override suspend fun deleteHabit(habitId: String): Result<Unit> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("habits").document(habitId)
         return try {
@@ -298,7 +298,7 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
     }
 
     // --- FOCUS SESSIONS ---
-    fun observeSessions(): Flow<List<FocusSession>> = flow {
+    override fun observeSessions(): Flow<List<FocusSession>> = flow {
         val uid = requireUserId()
         val path = "users/$uid/sessions"
         emitAll(
@@ -318,11 +318,11 @@ class ProductivityRepository(private val db: FirebaseFirestore) {
         )
     }
 
-    suspend fun logSession(
+    override suspend fun logSession(
         taskTitle: String,
         category: String,
         durationMinutes: Int,
-        type: String = "focus"
+        type: String
     ): Result<String> {
         val uid = requireUserId()
         val docRef = db.collection("users").document(uid).collection("sessions").document()

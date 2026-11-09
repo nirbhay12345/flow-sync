@@ -7,6 +7,7 @@ import com.example.data.model.FocusSession
 import com.example.data.model.Habit
 import com.example.data.model.Task
 import com.example.data.model.UserProfile
+import com.example.data.repository.ProductivityDataSource
 import com.example.data.repository.ProductivityRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,7 +39,7 @@ data class TimerUiState(
 )
 
 class ProductivityViewModel(
-    private val repository: ProductivityRepository
+    private val repository: ProductivityDataSource
 ) : ViewModel() {
 
     val tasks: StateFlow<List<Task>> = repository.observeTasks()
@@ -239,7 +240,7 @@ class ProductivityViewModel(
 }
 
 class ProductivityViewModelFactory(
-    private val repository: ProductivityRepository
+    private val repository: ProductivityDataSource
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

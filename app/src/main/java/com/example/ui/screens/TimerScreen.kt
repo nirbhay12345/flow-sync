@@ -188,138 +188,24 @@ fun TimerScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(36.dp))
-
-        // Circular Timer Visualizer
-        Box(
-            modifier = Modifier.size(260.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val trackColor = DarkBorder
-            val activeColor = when (timerState.mode) {
-                TimerMode.FOCUS -> FlowCyan
-                TimerMode.SHORT_BREAK -> FlowViolet
-                TimerMode.LONG_BREAK -> FlowOrange
-            }
-
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 14.dp.toPx()
-                // Background Track
-                drawCircle(
-                    color = trackColor,
-                    style = Stroke(width = strokeWidth)
-                )
-
-                // Foreground Animated Sweep
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        listOf(activeColor, activeColor.copy(alpha = 0.85f))
-                    ),
-                    startAngle = -90f,
-                    sweepAngle = 360f * animatedProgress,
-                    useCenter = false,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = formattedTime,
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 54.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (timerState.isRunning) "STAY IN FLOW" else "READY TO FOCUS",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        letterSpacing = 2.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = if (timerState.isRunning) FlowCyan else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        val activeColor = when (timerState.mode) {
+            TimerMode.FOCUS -> FlowCyan
+            TimerMode.SHORT_BREAK -> FlowViolet
+            TimerMode.LONG_BREAK -> FlowOrange
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        // Pomodoro Timer Component
+        com.example.ui.components.PomodoroTimerDisplay(
+            timeLeftSeconds = timerState.timeLeftSeconds,
+            totalSeconds = timerState.totalSeconds,
+            isRunning = timerState.isRunning,
+            activeColor = activeColor,
+            onStart = onToggleTimer,
+            onPause = onToggleTimer,
+            onReset = onResetTimer
+        )
 
-        // Timer Controls
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Reset Button
-            Surface(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .clickable { onResetTimer() }
-                    .testTag("reset_timer_button"),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Reset Timer",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(24.dp))
-
-            // Main Play/Pause Button
-            Surface(
-                modifier = Modifier
-                    .size(76.dp)
-                    .clip(CircleShape)
-                    .clickable { onToggleTimer() }
-                    .testTag("toggle_timer_button"),
-                shape = CircleShape,
-                color = FlowCyan
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (timerState.isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (timerState.isRunning) "Pause Timer" else "Start Timer",
-                        tint = Color.Black,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(24.dp))
-
-            // Skip / Complete Next
-            Surface(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        val nextMode = if (timerState.mode == TimerMode.FOCUS) TimerMode.SHORT_BREAK else TimerMode.FOCUS
-                        onSelectMode(nextMode)
-                    }
-                    .testTag("skip_timer_button"),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Skip to Next Interval",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Daily Summary Pill
         Card(
