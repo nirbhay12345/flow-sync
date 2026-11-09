@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,26 +16,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.PersonOutline
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -61,8 +54,10 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.example.R
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowViolet
+import com.example.ui.designsystem.FlowButton
+import com.example.ui.designsystem.FlowButtonVariant
+import com.example.ui.designsystem.FlowCard
+import com.example.ui.designsystem.FlowTheme
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -88,7 +83,7 @@ fun attemptAutoSignIn(
         return
     }
     val clientId = try {
-        context.getString(R.string.default_web_client_id)
+        context.getString(R.string.firestore_database_id)
     } catch (e: Exception) {
         onUnauthenticated()
         return
@@ -192,6 +187,9 @@ fun AuthScreen(
     var isLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     LaunchedEffect(Unit) {
         attemptAutoSignIn(
             context = context,
@@ -205,7 +203,7 @@ fun AuthScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -214,23 +212,20 @@ fun AuthScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // App Branding Icon
+            // App Minimalist Brand Icon
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(FlowCyan, FlowViolet)
-                        )
-                    ),
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(shapes.md))
+                    .background(colors.accentContainer)
+                    .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(shapes.md)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Bolt,
                     contentDescription = "FlowPulse Logo",
-                    tint = Color.Black,
-                    modifier = Modifier.size(44.dp)
+                    tint = colors.onAccentContainer,
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
@@ -238,65 +233,65 @@ fun AuthScreen(
 
             Text(
                 text = "FlowPulse",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 36.sp,
-                    letterSpacing = 1.sp
+                style = FlowTheme.typography.display.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = colors.textPrimary
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "Focus Deeply. Build Streaks. Ship Daily.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = FlowTheme.typography.bodyMedium,
+                color = colors.textSecondary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                modifier = Modifier.padding(bottom = 28.dp)
             )
 
             // Features Card
-            Card(
+            FlowCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                shape = RoundedCornerShape(shapes.xl),
+                backgroundColor = colors.surface,
+                borderColor = colors.border
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     FeatureRow(
                         icon = Icons.Default.Timer,
-                        iconTint = FlowCyan,
+                        iconTint = colors.accent,
                         title = "Smart Focus Timer",
-                        subtitle = "Pomodoro intervals with audio cues & session tracking"
+                        subtitle = "Tactile Pomodoro intervals with custom presets"
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     FeatureRow(
                         icon = Icons.Default.CheckCircle,
-                        iconTint = FlowViolet,
+                        iconTint = colors.priorityMedium,
                         title = "Priority Task Queue",
                         subtitle = "Organize deep work and calculate estimated pomodoros"
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     FeatureRow(
                         icon = Icons.Default.LocalFireDepartment,
-                        iconTint = Color(0xFFFF9F43),
+                        iconTint = colors.priorityHigh,
                         title = "Habit Streak Engine",
                         subtitle = "Build lasting discipline with daily visual progress"
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     FeatureRow(
                         icon = Icons.Default.CloudDone,
-                        iconTint = Color(0xFF10B981),
-                        title = "Real-Time Cloud Sync",
-                        subtitle = "Secure Firestore sync across all your devices"
+                        iconTint = colors.success,
+                        title = "Cloud & Offline Modes",
+                        subtitle = "Seamless guest mode or real-time Firestore sync"
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Google Sign-In Button
-            Button(
+            Surface(
                 onClick = {
                     isLoading = true
                     onGoogleSignInClicked(
@@ -319,38 +314,53 @@ fun AuthScreen(
                     )
                 },
                 enabled = !isLoading,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = FlowCyan,
-                    contentColor = Color.Black
-                ),
+                shape = RoundedCornerShape(shapes.md),
+                color = colors.accent,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(52.dp)
                     .testTag("google_sign_in_button")
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.Black,
-                        strokeWidth = 2.5.dp
-                    )
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Bolt,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(22.dp)
+                Box(contentAlignment = Alignment.Center) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = colors.onAccent,
+                            strokeWidth = 2.dp
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Sign in with Google",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = colors.onAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Sign in with Google",
+                                style = FlowTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = colors.onAccent
+                            )
+                        }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Continue as Guest Button
+            FlowButton(
+                text = "Continue as Guest",
+                onClick = onGuestLogin,
+                variant = FlowButtonVariant.SECONDARY,
+                icon = Icons.Default.PersonOutline,
+                enabled = !isLoading,
+                height = 52.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("guest_mode_button")
+            )
         }
 
         SnackbarHost(
@@ -367,32 +377,35 @@ private fun FeatureRow(
     title: String,
     subtitle: String
 ) {
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(iconTint.copy(alpha = 0.15f)),
+                .size(36.dp)
+                .clip(RoundedCornerShape(shapes.sm))
+                .background(iconTint.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+                style = FlowTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = colors.textPrimary
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = FlowTheme.typography.bodySmall,
+                color = colors.textSecondary
             )
         }
     }

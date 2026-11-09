@@ -1,7 +1,7 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,22 +22,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -54,18 +45,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.Task
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowViolet
-import com.example.ui.theme.PriorityHigh
-import com.example.ui.theme.PriorityLow
-import com.example.ui.theme.PriorityMedium
+import com.example.ui.designsystem.FlowBadge
+import com.example.ui.designsystem.FlowButton
+import com.example.ui.designsystem.FlowCard
+import com.example.ui.designsystem.FlowChip
+import com.example.ui.designsystem.FlowIconButton
+import com.example.ui.designsystem.FlowTheme
 
 @Composable
 fun TasksScreen(
@@ -77,6 +68,9 @@ fun TasksScreen(
 ) {
     var selectedFilter by remember { mutableStateOf("All") }
     var showAddDialog by remember { mutableStateOf(false) }
+
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
 
     val filters = listOf("All", "In Progress", "Completed", "Work", "Personal", "Study", "High Priority")
 
@@ -97,9 +91,9 @@ fun TasksScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
-                containerColor = FlowCyan,
-                contentColor = Color.Black,
-                shape = CircleShape,
+                containerColor = colors.accent,
+                contentColor = colors.onAccent,
+                shape = RoundedCornerShape(shapes.md),
                 modifier = Modifier.testTag("add_task_fab")
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create Task")
@@ -126,13 +120,14 @@ fun TasksScreen(
                 Column {
                     Text(
                         text = "Priority Tasks",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style = FlowTheme.typography.headline.copy(fontWeight = FontWeight.Bold),
+                        color = colors.textPrimary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "$pendingCount active • $completedCount finished",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "$pendingCount active • $completedCount completed",
+                        style = FlowTheme.typography.bodySmall,
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -141,20 +136,13 @@ fun TasksScreen(
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 14.dp)
             ) {
                 items(filters) { filter ->
-                    val isSelected = selectedFilter == filter
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedFilter = filter },
-                        label = { Text(filter) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = FlowCyan,
-                            selectedLabelColor = Color.Black,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    FlowChip(
+                        text = filter,
+                        isSelected = selectedFilter == filter,
+                        onClick = { selectedFilter = filter }
                     )
                 }
             }
@@ -168,30 +156,39 @@ fun TasksScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.TaskAlt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(shapes.md))
+                                .background(colors.surfaceElevated)
+                                .border(1.dp, colors.border, RoundedCornerShape(shapes.md)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TaskAlt,
+                                contentDescription = null,
+                                tint = colors.textMuted,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = if (tasks.isEmpty()) "No tasks yet!" else "No tasks matching '$selectedFilter'",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = if (tasks.isEmpty()) "No tasks created yet" else "No tasks matching '$selectedFilter'",
+                            style = FlowTheme.typography.titleMedium,
+                            color = colors.textPrimary
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Tap the + button below to create your first deep work task.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
+                            text = "Tap the + button to queue your next deep work session.",
+                            style = FlowTheme.typography.bodySmall,
+                            color = colors.textMuted
                         )
                     }
                 }
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredTasks, key = { it.id }) { task ->
@@ -225,47 +222,49 @@ fun TaskItemCard(
     onDelete: () -> Unit,
     onStartFocus: () -> Unit
 ) {
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     val priorityColor = when (task.priority.lowercase()) {
-        "high" -> PriorityHigh
-        "low" -> PriorityLow
-        else -> PriorityMedium
+        "high" -> colors.priorityHigh
+        "low" -> colors.priorityLow
+        else -> colors.priorityMedium
     }
 
-    Card(
+    FlowCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("task_item_${task.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (task.isCompleted) MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
-        )
+        shape = RoundedCornerShape(shapes.md),
+        backgroundColor = if (task.isCompleted) colors.surface.copy(alpha = 0.5f) else colors.surface,
+        borderColor = if (task.isCompleted) colors.borderSubtle else colors.border
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox Circle
+            // Checkbox Circle - Minimalist tactile
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (task.isCompleted) FlowCyan else Color.Transparent
+                    .background(if (task.isCompleted) colors.accent else Color.Transparent)
+                    .border(
+                        1.5.dp,
+                        if (task.isCompleted) colors.accent else colors.border,
+                        CircleShape
                     )
-                    .clickable { onToggle() }
-                    .then(
-                        if (!task.isCompleted) Modifier.background(DarkBorder, CircleShape) else Modifier
-                    ),
+                    .clickable { onToggle() },
                 contentAlignment = Alignment.Center
             ) {
                 if (task.isCompleted) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Completed",
-                        tint = Color.Black,
-                        modifier = Modifier.size(18.dp)
+                        tint = colors.onAccent,
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -274,102 +273,82 @@ fun TaskItemCard(
 
             // Task Content
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = task.title,
+                    style = FlowTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    ),
+                    color = if (task.isCompleted) colors.textMuted else colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                if (task.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                        ),
-                        color = if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        text = task.description,
+                        style = FlowTheme.typography.bodySmall,
+                        color = colors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                if (task.description.isNotBlank()) {
-                    Text(
-                        text = task.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Badges Row
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Priority Pill
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(priorityColor.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = task.priority.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp
-                            ),
-                            color = priorityColor
-                        )
-                    }
+                    FlowBadge(
+                        text = task.priority.uppercase(),
+                        color = priorityColor
+                    )
 
-                    // Category Pill
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = task.category,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    FlowBadge(
+                        text = task.category,
+                        color = colors.textSecondary,
+                        hasDot = false
+                    )
 
-                    // Pomodoro Tracker
                     Text(
-                        text = "🍅 ${task.completedPomodoros}/${task.estimatedPomodoros}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "${task.completedPomodoros}/${task.estimatedPomodoros} pom",
+                        style = FlowTheme.typography.monoLabel,
+                        color = colors.textMuted
                     )
                 }
             }
 
             // Actions
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 if (!task.isCompleted) {
-                    IconButton(
+                    FlowIconButton(
+                        icon = Icons.Default.PlayArrow,
+                        contentDescription = "Focus on this Task",
                         onClick = onStartFocus,
+                        tint = colors.accent,
+                        backgroundColor = colors.accentContainer,
+                        borderColor = null,
+                        size = 32.dp,
                         modifier = Modifier.testTag("focus_task_${task.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Focus on this Task",
-                            tint = FlowCyan
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.testTag("delete_task_${task.id}")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Task",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
+
+                FlowIconButton(
+                    icon = Icons.Default.DeleteOutline,
+                    contentDescription = "Delete Task",
+                    onClick = onDelete,
+                    tint = colors.textMuted,
+                    backgroundColor = Color.Transparent,
+                    borderColor = null,
+                    size = 32.dp,
+                    modifier = Modifier.testTag("delete_task_${task.id}")
+                )
             }
         }
     }
@@ -386,6 +365,9 @@ fun CreateTaskDialog(
     var priority by remember { mutableStateOf("medium") }
     var pomodoros by remember { mutableIntStateOf(2) }
 
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     val categories = listOf("Work", "Personal", "Study", "Health", "Creative")
     val priorities = listOf("low", "medium", "high")
 
@@ -394,7 +376,8 @@ fun CreateTaskDialog(
         title = {
             Text(
                 text = "New Focus Task",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = FlowTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = colors.textPrimary
             )
         },
         text = {
@@ -405,9 +388,13 @@ fun CreateTaskDialog(
                     label = { Text("Task Title *") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = FlowCyan,
-                        focusedLabelColor = FlowCyan
+                        focusedBorderColor = colors.accent,
+                        focusedLabelColor = colors.accent,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
                     ),
+                    shape = RoundedCornerShape(shapes.sm),
                     modifier = Modifier.fillMaxWidth().testTag("task_title_input")
                 )
 
@@ -416,53 +403,71 @@ fun CreateTaskDialog(
                     onValueChange = { description = it },
                     label = { Text("Notes (optional)") },
                     maxLines = 2,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.accent,
+                        focusedLabelColor = colors.accent,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
+                    ),
+                    shape = RoundedCornerShape(shapes.sm),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Category chips
-                Text("Category", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = "CATEGORY",
+                    style = FlowTheme.typography.labelSmall,
+                    color = colors.textMuted
+                )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(categories) { cat ->
                         val isSelected = category == cat
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) FlowCyan else MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(RoundedCornerShape(shapes.xs))
+                                .background(if (isSelected) colors.accentContainer else colors.surfaceElevated)
+                                .border(1.dp, if (isSelected) colors.accent else colors.border, RoundedCornerShape(shapes.xs))
                                 .clickable { category = cat }
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = cat,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface
+                                style = FlowTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = if (isSelected) colors.onAccentContainer else colors.textSecondary
                             )
                         }
                     }
                 }
 
                 // Priority selector
-                Text("Priority", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = "PRIORITY",
+                    style = FlowTheme.typography.labelSmall,
+                    color = colors.textMuted
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     priorities.forEach { p ->
                         val isSelected = priority == p
-                        val color = when (p) {
-                            "high" -> PriorityHigh
-                            "low" -> PriorityLow
-                            else -> PriorityMedium
+                        val pColor = when (p) {
+                            "high" -> colors.priorityHigh
+                            "low" -> colors.priorityLow
+                            else -> colors.priorityMedium
                         }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) color else MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(RoundedCornerShape(shapes.xs))
+                                .background(if (isSelected) pColor.copy(alpha = 0.15f) else colors.surfaceElevated)
+                                .border(1.dp, if (isSelected) pColor else colors.border, RoundedCornerShape(shapes.xs))
                                 .clickable { priority = p }
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = p.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = if (isSelected) Color.Black else color
+                                style = FlowTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isSelected) pColor else colors.textSecondary
                             )
                         }
                     }
@@ -474,44 +479,57 @@ fun CreateTaskDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Target Pomodoros (25m each)", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = "ESTIMATED POMODOROS",
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
+                        FlowIconButton(
+                            icon = Icons.Default.Add,
+                            contentDescription = "Decrease",
                             onClick = { if (pomodoros > 1) pomodoros-- },
-                            enabled = pomodoros > 1
-                        ) {
-                            Text("–", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("$pomodoros", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        IconButton(
+                            size = 28.dp,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Text(
+                            text = "$pomodoros",
+                            style = FlowTheme.typography.titleMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = colors.textPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        FlowIconButton(
+                            icon = Icons.Default.Add,
+                            contentDescription = "Increase",
                             onClick = { if (pomodoros < 12) pomodoros++ },
-                            enabled = pomodoros < 12
-                        ) {
-                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
+                            size = 28.dp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
             }
         },
         confirmButton = {
-            Button(
+            FlowButton(
+                text = "Create Task",
                 onClick = {
                     if (title.isNotBlank()) {
                         onConfirm(title.trim(), description.trim(), category, priority, pomodoros, null)
                     }
                 },
                 enabled = title.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = FlowCyan, contentColor = Color.Black),
                 modifier = Modifier.testTag("confirm_create_task_button")
-            ) {
-                Text("Create Task")
-            }
+            )
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Cancel", color = colors.textSecondary)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(shapes.lg)
     )
 }

@@ -1,8 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,45 +14,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.FocusSession
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowOrange
-import com.example.ui.theme.FlowViolet
+import com.example.ui.components.PomodoroTimerDisplay
+import com.example.ui.designsystem.FlowCard
+import com.example.ui.designsystem.FlowIconButton
+import com.example.ui.designsystem.FlowSegmentedControl
+import com.example.ui.designsystem.FlowTheme
 import com.example.ui.viewmodel.TimerMode
 import com.example.ui.viewmodel.TimerUiState
-import java.util.Locale
 
 @Composable
 fun TimerScreen(
@@ -68,78 +52,46 @@ fun TimerScreen(
     onNavigateToTasks: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
 
-    val progress = if (timerState.totalSeconds > 0) {
-        timerState.timeLeftSeconds.toFloat() / timerState.totalSeconds.toFloat()
-    } else 0f
+    val todayMinutes = remember(sessions) {
+        sessions.filter { it.type == "focus" }.sumOf { it.durationMinutes }
+    }
 
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 500),
-        label = "timer_progress"
-    )
-
-    val minutes = timerState.timeLeftSeconds / 60
-    val seconds = timerState.timeLeftSeconds % 60
-    val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
-
-    val todayMinutes = sessions.filter {
-        // Simple today check
-        it.type == "focus"
-    }.sumOf { it.durationMinutes }
+    val modeColor = when (timerState.mode) {
+        TimerMode.FOCUS -> colors.accent
+        TimerMode.SHORT_BREAK -> colors.textSecondary
+        TimerMode.LONG_BREAK -> colors.priorityMedium
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = FlowTheme.spacing.xl, vertical = FlowTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Mode Selector Pills
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            TimerMode.values().forEach { mode ->
-                val isSelected = timerState.mode == mode
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-                        )
-                        .clickable { onSelectMode(mode) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = mode.title,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        ),
-                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
+        // Mode Selector (Focus, Short Break, Long Break)
+        FlowSegmentedControl(
+            items = TimerMode.values().toList(),
+            selectedItem = timerState.mode,
+            onItemSelected = onSelectMode,
+            labelProvider = { it.title },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Linked Task Indicator / Picker Button
-        Card(
+        // Linked Task Card
+        FlowCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onNavigateToTasks() }
                 .testTag("linked_task_card"),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(shapes.md),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
         ) {
             Row(
                 modifier = Modifier
@@ -148,110 +100,131 @@ fun TimerScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.TaskAlt,
-                        contentDescription = null,
-                        tint = FlowCyan,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(shapes.xs))
+                            .background(if (timerState.linkedTaskId != null) colors.accentContainer else colors.surfaceSubtle),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (timerState.linkedTaskId != null) Icons.Default.TaskAlt else Icons.Default.Link,
+                            contentDescription = null,
+                            tint = if (timerState.linkedTaskId != null) colors.onAccentContainer else colors.textMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
                     Column {
                         Text(
-                            text = if (timerState.linkedTaskId != null) "Focusing on:" else "Active Goal:",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = if (timerState.linkedTaskId != null) "FOCUS TARGET" else "ACTIVE GOAL",
+                            style = FlowTheme.typography.labelSmall,
+                            color = colors.textMuted
                         )
                         Text(
                             text = timerState.linkedTaskTitle,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            style = FlowTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = colors.textPrimary,
+                            maxLines = 1
                         )
                     }
                 }
 
                 if (timerState.linkedTaskId != null) {
-                    IconButton(onClick = onUnlinkTask) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Unlink Task",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    FlowIconButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = "Unlink Task",
+                        onClick = onUnlinkTask,
+                        size = 32.dp,
+                        borderColor = null
+                    )
                 } else {
                     Text(
-                        text = "Assign Task",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = FlowCyan
+                        text = "Assign",
+                        style = FlowTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = colors.accent
                     )
                 }
             }
         }
 
-        val activeColor = when (timerState.mode) {
-            TimerMode.FOCUS -> FlowCyan
-            TimerMode.SHORT_BREAK -> FlowViolet
-            TimerMode.LONG_BREAK -> FlowOrange
-        }
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Pomodoro Timer Component
-        com.example.ui.components.PomodoroTimerDisplay(
+        PomodoroTimerDisplay(
             timeLeftSeconds = timerState.timeLeftSeconds,
             totalSeconds = timerState.totalSeconds,
             isRunning = timerState.isRunning,
-            activeColor = activeColor,
+            activeColor = modeColor,
+            trackColor = colors.border,
             onStart = onToggleTimer,
             onPause = onToggleTimer,
-            onReset = onResetTimer
+            onReset = onResetTimer,
+            onAddMinutes = { extraMinutes ->
+                // Quick bump through toggle or timer
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Daily Summary Pill
-        Card(
+        // Daily Summary Metrics
+        FlowCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(shapes.lg),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(vertical = 18.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "$todayMinutes min",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = FlowCyan
+                        text = "$todayMinutes m",
+                        style = FlowTheme.typography.titleLarge.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colors.accent
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Focus Today",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
                     )
                 }
 
                 Box(
                     modifier = Modifier
-                        .height(32.dp)
+                        .height(30.dp)
                         .width(1.dp)
-                        .background(DarkBorder)
+                        .background(colors.border)
                 )
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "${sessions.size}",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = FlowViolet
+                        style = FlowTheme.typography.titleLarge.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colors.textPrimary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Sessions Logged",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
                     )
                 }
             }

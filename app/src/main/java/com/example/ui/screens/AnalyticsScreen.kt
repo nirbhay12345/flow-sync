@@ -12,21 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -37,6 +31,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,11 +41,10 @@ import com.example.data.model.FocusSession
 import com.example.data.model.Habit
 import com.example.data.model.Task
 import com.example.data.model.UserProfile
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowGreen
-import com.example.ui.theme.FlowOrange
-import com.example.ui.theme.FlowViolet
+import com.example.ui.designsystem.FlowBadge
+import com.example.ui.designsystem.FlowCard
+import com.example.ui.designsystem.FlowMetricTile
+import com.example.ui.designsystem.FlowTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -62,6 +58,8 @@ fun AnalyticsScreen(
     profile: UserProfile?
 ) {
     val scrollState = rememberScrollState()
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
 
     val goalMinutes = profile?.dailyFocusGoalMinutes ?: 120
     val focusSessions = sessions.filter { it.type == "focus" }
@@ -84,13 +82,10 @@ fun AnalyticsScreen(
     val last7DaysData = remember(sessions) {
         val days = mutableListOf<Pair<String, Int>>()
         val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
-        val cal = Calendar.getInstance()
-        // Mock distribution or map from real sessions
         for (i in 6 downTo 0) {
             val d = Calendar.getInstance()
             d.add(Calendar.DAY_OF_YEAR, -i)
             val dayLabel = dayFormat.format(d.time)
-            // If i == 0 (today), use actual totalFocusMinutes
             val minutes = if (i == 0) totalFocusMinutes else (25 * ((7 - i) % 3 + 1))
             days.add(Pair(dayLabel, minutes))
         }
@@ -101,27 +96,27 @@ fun AnalyticsScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(horizontal = FlowTheme.spacing.xl, vertical = FlowTheme.spacing.lg)
     ) {
         Text(
-            text = "Productivity Insights",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground
+            text = "Insights",
+            style = FlowTheme.typography.headline.copy(fontWeight = FontWeight.Bold),
+            color = colors.textPrimary
         )
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = "Performance tracking and focus distribution",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = FlowTheme.typography.bodySmall,
+            color = colors.textSecondary,
             modifier = Modifier.padding(bottom = 20.dp)
         )
 
-        // Productivity Score Hero Card
-        Card(
+        // Productivity Score Hero Card with minimalist radial gauge
+        FlowCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(shapes.xl),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
         ) {
             Row(
                 modifier = Modifier
@@ -132,35 +127,53 @@ fun AnalyticsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Daily Flow Score",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "FLOW SCORE",
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "$totalProductivityScore%",
-                        style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = FlowCyan
+                        style = FlowTheme.typography.timerDigits.copy(
+                            fontSize = 44.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = colors.accent
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (totalProductivityScore >= 75) "Peak productivity state achieved!" else "Keep going to build your momentum.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = if (totalProductivityScore >= 75) "Peak productivity state achieved." else "Consistent blocks build deep momentum.",
+                        style = FlowTheme.typography.bodySmall,
+                        color = colors.textSecondary
                     )
                 }
 
+                // Minimalist Arc Gauge
                 Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(CircleShape)
-                        .background(FlowCyan.copy(alpha = 0.15f)),
+                    modifier = Modifier.size(76.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.BarChart,
-                        contentDescription = null,
-                        tint = FlowCyan,
-                        modifier = Modifier.size(36.dp)
+                    Canvas(modifier = Modifier.fillMaxSize().padding(6.dp)) {
+                        val strokeWidth = 5.dp.toPx()
+                        drawCircle(
+                            color = colors.border,
+                            style = Stroke(width = strokeWidth)
+                        )
+                        drawArc(
+                            color = colors.accent,
+                            startAngle = -90f,
+                            sweepAngle = 360f * (totalProductivityScore / 100f),
+                            useCenter = false,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        )
+                    }
+                    Text(
+                        text = "${totalProductivityScore}",
+                        style = FlowTheme.typography.monoLabel.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ),
+                        color = colors.textPrimary
                     )
                 }
             }
@@ -169,68 +182,83 @@ fun AnalyticsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // 7-day Focus Activity Chart
-        Card(
+        FlowCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(shapes.lg),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Weekly Focus Activity (mins)",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "WEEKLY FOCUS (MINS)",
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
+                    )
+                    Text(
+                        text = "${totalFocusMinutes}m logged",
+                        style = FlowTheme.typography.monoLabel,
+                        color = colors.accent
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
 
                 val maxVal = (last7DaysData.maxOfOrNull { it.second } ?: 120).coerceAtLeast(60).toFloat()
 
-                // Custom Bar Chart Canvas
+                // Minimalist Bar Chart
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp)
+                        .height(130.dp)
                 ) {
-                    val barWidth = 26.dp.toPx()
+                    val barWidth = 20.dp.toPx()
                     val totalBars = last7DaysData.size
                     val spacing = (size.width - (barWidth * totalBars)) / (totalBars + 1)
 
                     last7DaysData.forEachIndexed { index, pair ->
-                        val barHeight = (pair.second / maxVal) * (size.height - 30.dp.toPx())
+                        val barHeight = (pair.second / maxVal) * (size.height - 20.dp.toPx())
                         val x = spacing + index * (barWidth + spacing)
                         val y = size.height - barHeight
 
-                        // Background Bar
+                        // Background track
                         drawRoundRect(
-                            color = DarkBorder,
+                            color = colors.surfaceSubtle,
                             topLeft = Offset(x, 0f),
                             size = Size(barWidth, size.height),
-                            cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx())
+                            cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
                         )
 
                         // Filled Bar
+                        val isToday = index == totalBars - 1
                         drawRoundRect(
-                            color = if (index == totalBars - 1) FlowCyan else FlowViolet,
+                            color = if (isToday) colors.accent else colors.textMuted.copy(alpha = 0.5f),
                             topLeft = Offset(x, y),
                             size = Size(barWidth, barHeight),
-                            cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx())
+                            cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // X-Axis Day Labels
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    last7DaysData.forEach { (day, _) ->
+                    last7DaysData.forEachIndexed { idx, pair ->
+                        val isToday = idx == last7DaysData.size - 1
                         Text(
-                            text = day,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = pair.first,
+                            style = FlowTheme.typography.labelSmall.copy(
+                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                            ),
+                            color = if (isToday) colors.accent else colors.textMuted
                         )
                     }
                 }
@@ -239,105 +267,76 @@ fun AnalyticsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Metrics Grid
+        // Metrics Grid (2x2)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricStatCard(
+            FlowMetricTile(
                 modifier = Modifier.weight(1f),
-                title = "Focus Time",
-                value = "$totalFocusMinutes m",
-                target = "Goal: ${goalMinutes}m",
-                icon = Icons.Default.Timer,
-                iconColor = FlowCyan
+                label = "Focus Today",
+                value = "${totalFocusMinutes}m",
+                subtitle = "Goal: ${goalMinutes}m",
+                icon = Icons.Default.Timer
             )
 
-            MetricStatCard(
+            FlowMetricTile(
                 modifier = Modifier.weight(1f),
-                title = "Tasks Done",
+                label = "Tasks Done",
                 value = "$completedTasksCount",
-                target = "of $totalTasksCount total",
-                icon = Icons.Default.CheckCircle,
-                iconColor = FlowGreen
+                subtitle = "of $totalTasksCount queue",
+                icon = Icons.Default.CheckCircle
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            FlowMetricTile(
+                modifier = Modifier.weight(1f),
+                label = "Habits Today",
+                value = "$completedHabitsToday",
+                subtitle = "of $totalHabitsCount routines",
+                icon = Icons.Default.LocalFireDepartment
+            )
+
+            FlowMetricTile(
+                modifier = Modifier.weight(1f),
+                label = "Sessions",
+                value = "${sessions.size}",
+                subtitle = "All time logged",
+                icon = Icons.Default.Timer
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Category Breakdown Card
-        Card(
+        FlowCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            shape = RoundedCornerShape(shapes.lg),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = "Category Distribution",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "CATEGORY DISTRIBUTION",
+                    style = FlowTheme.typography.labelSmall,
+                    color = colors.textMuted
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                CategoryProgressRow(name = "Work", ratio = 0.65f, color = FlowCyan)
-                Spacer(modifier = Modifier.height(10.dp))
-                CategoryProgressRow(name = "Personal", ratio = 0.45f, color = FlowViolet)
-                Spacer(modifier = Modifier.height(10.dp))
-                CategoryProgressRow(name = "Health", ratio = 0.80f, color = FlowOrange)
-                Spacer(modifier = Modifier.height(10.dp))
-                CategoryProgressRow(name = "Study", ratio = 0.30f, color = Color(0xFF38BDF8))
+                CategoryProgressRow(name = "Work", ratio = 0.65f, color = colors.accent)
+                Spacer(modifier = Modifier.height(12.dp))
+                CategoryProgressRow(name = "Personal", ratio = 0.45f, color = colors.textSecondary)
+                Spacer(modifier = Modifier.height(12.dp))
+                CategoryProgressRow(name = "Health", ratio = 0.80f, color = colors.priorityMedium)
+                Spacer(modifier = Modifier.height(12.dp))
+                CategoryProgressRow(name = "Study", ratio = 0.30f, color = colors.priorityLow)
             }
-        }
-    }
-}
-
-@Composable
-private fun MetricStatCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    value: String,
-    target: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconColor: Color
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = target,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
@@ -348,6 +347,8 @@ private fun CategoryProgressRow(
     ratio: Float,
     color: Color
 ) {
+    val colors = FlowTheme.colors
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -355,24 +356,30 @@ private fun CategoryProgressRow(
         ) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface
+                style = FlowTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                color = colors.textPrimary
             )
             Text(
                 text = "${(ratio * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = FlowTheme.typography.monoLabel,
                 color = color
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { ratio },
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = color,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+                .height(4.dp)
+                .clip(RoundedCornerShape(FlowTheme.shapes.pill))
+                .background(colors.surfaceSubtle)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(ratio)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(FlowTheme.shapes.pill))
+                    .background(color)
+            )
+        }
     }
 }

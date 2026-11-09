@@ -7,30 +7,32 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -64,13 +66,16 @@ import com.example.data.repository.ProductivityDataSource
 import com.example.data.repository.ProductivityRepository
 import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOut
+import com.example.ui.designsystem.FlowBadge
+import com.example.ui.designsystem.FlowButton
+import com.example.ui.designsystem.FlowButtonVariant
+import com.example.ui.designsystem.FlowCustomizationSheet
+import com.example.ui.designsystem.FlowTheme
+import com.example.ui.designsystem.FlowThemeState
 import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.HabitsScreen
 import com.example.ui.screens.TasksScreen
 import com.example.ui.screens.TimerScreen
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowOrange
-import com.example.ui.theme.FlowViolet
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.ProductivityViewModel
 import com.example.ui.viewmodel.ProductivityViewModelFactory
@@ -90,7 +95,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            val themeState = remember { FlowThemeState() }
+            MyApplicationTheme(themeState = themeState) {
                 AppRoot()
             }
         }
@@ -175,6 +181,10 @@ fun MainFeatureScreen(
 
     var currentTab by remember { mutableStateOf(AppTab.TIMER) }
     var showSignOutDialog by remember { mutableStateOf(false) }
+    var showCustomizationSheet by remember { mutableStateOf(false) }
+
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
 
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val habits by viewModel.habits.collectAsStateWithLifecycle()
@@ -194,44 +204,47 @@ fun MainFeatureScreen(
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .clip(CircleShape)
-                                .background(if (isGuestMode) FlowOrange else FlowCyan),
+                                .clip(RoundedCornerShape(shapes.xs))
+                                .background(colors.accentContainer)
+                                .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(shapes.xs)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Bolt,
                                 contentDescription = null,
-                                tint = Color.Black,
-                                modifier = Modifier.size(18.dp)
+                                tint = colors.onAccentContainer,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "FlowPulse",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 0.5.sp
+                            style = FlowTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.2).sp
                             ),
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = colors.textPrimary
                         )
                         if (isGuestMode) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(FlowOrange.copy(alpha = 0.2f))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "Guest",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = FlowOrange
-                                )
-                            }
+                            FlowBadge(
+                                text = "GUEST",
+                                color = colors.priorityMedium
+                            )
                         }
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { showCustomizationSheet = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Customize Aesthetic",
+                            tint = colors.textSecondary
+                        )
+                    }
+
                     IconButton(
                         onClick = { showSignOutDialog = true },
                         modifier = Modifier.testTag("sign_out_button")
@@ -239,53 +252,62 @@ fun MainFeatureScreen(
                         Icon(
                             imageVector = Icons.Default.Logout,
                             contentDescription = if (isGuestMode) "Exit Guest Mode" else "Sign Out",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = colors.textSecondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = colors.background
                 )
             )
         },
         bottomBar = {
-            NavigationBar(
+            Box(
                 modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .testTag("bottom_nav_bar"),
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
+                    .fillMaxWidth()
+                    .background(colors.surface)
+                    .border(1.dp, colors.borderSubtle, RoundedCornerShape(0.dp))
             ) {
-                AppTab.values().forEach { tab ->
-                    val isSelected = currentTab == tab
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { currentTab = tab },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.title
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = tab.title,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.Black,
-                            selectedTextColor = FlowCyan,
-                            indicatorColor = FlowCyan,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
-                    )
+                NavigationBar(
+                    modifier = Modifier
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .testTag("bottom_nav_bar"),
+                    containerColor = colors.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    AppTab.values().forEach { tab ->
+                        val isSelected = currentTab == tab
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = { currentTab = tab },
+                            icon = {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.title
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = tab.title,
+                                    style = FlowTheme.typography.labelMedium.copy(
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = colors.accent,
+                                selectedTextColor = colors.accent,
+                                indicatorColor = colors.accentContainer,
+                                unselectedIconColor = colors.textMuted,
+                                unselectedTextColor = colors.textMuted
+                            ),
+                            modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
+                        )
+                    }
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = colors.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -337,18 +359,28 @@ fun MainFeatureScreen(
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text(if (isGuestMode) "Exit Guest Mode" else "Sign Out") },
+            title = {
+                Text(
+                    text = if (isGuestMode) "Exit Guest Mode" else "Sign Out",
+                    style = FlowTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = colors.textPrimary
+                )
+            },
             text = {
                 Text(
-                    if (isGuestMode) {
+                    text = if (isGuestMode) {
                         "You are currently using FlowPulse in offline Guest Mode. You can sign in with your Google account anytime to back up your productivity metrics and sync across devices."
                     } else {
                         "Signed in as $userEmail ($userDisplayName). Are you sure you want to sign out?"
-                    }
+                    },
+                    style = FlowTheme.typography.bodyMedium,
+                    color = colors.textSecondary
                 )
             },
             confirmButton = {
-                TextButton(
+                FlowButton(
+                    text = if (isGuestMode) "Exit to Sign In" else "Sign Out",
+                    variant = FlowButtonVariant.DANGER,
                     onClick = {
                         showSignOutDialog = false
                         if (isGuestMode) {
@@ -357,19 +389,21 @@ fun MainFeatureScreen(
                             signOut(credentialManager, coroutineScope)
                         }
                     }
-                ) {
-                    Text(
-                        if (isGuestMode) "Exit to Sign In" else "Sign Out",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                )
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = colors.textSecondary)
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = colors.surface,
+            shape = RoundedCornerShape(shapes.lg)
         )
     }
+
+    // Live Customization Modal Sheet
+    FlowCustomizationSheet(
+        isOpen = showCustomizationSheet,
+        onDismiss = { showCustomizationSheet = false }
+    )
 }

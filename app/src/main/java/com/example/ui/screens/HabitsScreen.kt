@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,18 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -50,14 +45,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.Habit
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.FlowCyan
-import com.example.ui.theme.FlowOrange
-import com.example.ui.theme.FlowViolet
+import com.example.ui.designsystem.FlowBadge
+import com.example.ui.designsystem.FlowButton
+import com.example.ui.designsystem.FlowCard
+import com.example.ui.designsystem.FlowIconButton
+import com.example.ui.designsystem.FlowTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -73,9 +69,11 @@ fun HabitsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     val todayStr = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
 
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     val last7Days = remember {
-        val cal = Calendar.getInstance()
-        val list = mutableListOf<Pair<String, String>>() // "YYYY-MM-DD" to "Mon"
+        val list = mutableListOf<Pair<String, String>>()
         val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         for (i in 6 downTo 0) {
@@ -90,9 +88,9 @@ fun HabitsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
-                containerColor = FlowOrange,
-                contentColor = Color.Black,
-                shape = CircleShape,
+                containerColor = colors.accent,
+                contentColor = colors.onAccent,
+                shape = RoundedCornerShape(shapes.md),
                 modifier = Modifier.testTag("add_habit_fab")
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create Habit")
@@ -119,13 +117,14 @@ fun HabitsScreen(
                 Column {
                     Text(
                         text = "Habit Streaks",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style = FlowTheme.typography.headline.copy(fontWeight = FontWeight.Bold),
+                        color = colors.textPrimary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "$completedTodayCount/${habits.size} done today • $activeStreaksCount active streaks",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = FlowTheme.typography.bodySmall,
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -138,30 +137,39 @@ fun HabitsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Repeat,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(shapes.md))
+                                .background(colors.surfaceElevated)
+                                .border(1.dp, colors.border, RoundedCornerShape(shapes.md)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Repeat,
+                                contentDescription = null,
+                                tint = colors.textMuted,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = "No habits tracked yet",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            style = FlowTheme.typography.titleMedium,
+                            color = colors.textPrimary
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Build positive routines like 'Read 20 mins' or 'Morning Workout'.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
+                            text = "Build discipline with daily routines like 'Read 20 mins' or 'Morning Run'.",
+                            style = FlowTheme.typography.bodySmall,
+                            color = colors.textMuted
                         )
                     }
                 }
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(habits, key = { it.id }) { habit ->
@@ -198,15 +206,16 @@ fun HabitCard(
     onDelete: () -> Unit
 ) {
     val isDoneToday = habit.completedDates.contains(todayStr)
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
 
-    Card(
+    FlowCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("habit_item_${habit.id}"),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        shape = RoundedCornerShape(shapes.lg),
+        backgroundColor = colors.surface,
+        borderColor = colors.border
     ) {
         Column(
             modifier = Modifier
@@ -221,82 +230,94 @@ fun HabitCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = habit.title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = FlowTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = colors.textPrimary
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Category Pill
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = habit.category,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        FlowBadge(
+                            text = habit.category,
+                            color = colors.textSecondary,
+                            hasDot = false
+                        )
 
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        // Streak Indicator
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.LocalFireDepartment,
                                 contentDescription = null,
-                                tint = FlowOrange,
-                                modifier = Modifier.size(16.dp)
+                                tint = colors.priorityMedium,
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(2.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
-                                text = "${habit.currentStreak}d (best ${habit.bestStreak}d)",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = FlowOrange
+                                text = "${habit.currentStreak}d streak",
+                                style = FlowTheme.typography.monoLabel.copy(fontWeight = FontWeight.SemiBold),
+                                color = colors.priorityMedium
                             )
                         }
                     }
                 }
 
-                // Today Check-in Button
-                Button(
-                    onClick = onToggle,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDoneToday) FlowCyan else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isDoneToday) Color.Black else MaterialTheme.colorScheme.onSurface
-                    ),
-                    modifier = Modifier.testTag("toggle_habit_${habit.id}")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    if (isDoneToday) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Done", fontWeight = FontWeight.Bold)
-                    } else {
-                        Text("Log Today")
+                    // Today Check-in Button
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(shapes.sm))
+                            .background(if (isDoneToday) colors.accentContainer else colors.surfaceElevated)
+                            .border(
+                                1.dp,
+                                if (isDoneToday) colors.accent else colors.border,
+                                RoundedCornerShape(shapes.sm)
+                            )
+                            .clickable { onToggle() }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .testTag("toggle_habit_${habit.id}"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isDoneToday) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = colors.onAccentContainer,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Done",
+                                    style = FlowTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = colors.onAccentContainer
+                                )
+                            } else {
+                                Text(
+                                    text = "Log Today",
+                                    style = FlowTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                    color = colors.textSecondary
+                                )
+                            }
+                        }
                     }
-                }
 
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
+                    FlowIconButton(
+                        icon = Icons.Default.DeleteOutline,
                         contentDescription = "Delete Habit",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        onClick = onDelete,
+                        tint = colors.textMuted,
+                        size = 32.dp,
+                        borderColor = null
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 7-day Visual Dot Matrix
+            // 7-day Visual Matrix
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -309,19 +330,21 @@ fun HabitCard(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = dayLabel,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 11.sp,
+                            style = FlowTheme.typography.labelSmall.copy(
                                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
                             ),
-                            color = if (isToday) FlowCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isToday) colors.accent else colors.textMuted
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
-                                .background(
-                                    if (isCompleted) FlowOrange else MaterialTheme.colorScheme.surfaceVariant
+                                .background(if (isCompleted) colors.accent else Color.Transparent)
+                                .border(
+                                    1.dp,
+                                    if (isCompleted) colors.accent else colors.border,
+                                    CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -329,8 +352,8 @@ fun HabitCard(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(14.dp)
+                                    tint = colors.onAccent,
+                                    modifier = Modifier.size(12.dp)
                                 )
                             }
                         }
@@ -350,6 +373,9 @@ fun CreateHabitDialog(
     var category by remember { mutableStateOf("Health") }
     var targetDays by remember { mutableIntStateOf(7) }
 
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
     val categories = listOf("Health", "Mindset", "Learning", "Productivity", "Fitness")
 
     AlertDialog(
@@ -357,7 +383,8 @@ fun CreateHabitDialog(
         title = {
             Text(
                 text = "New Habit Streak",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = FlowTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = colors.textPrimary
             )
         },
         text = {
@@ -369,27 +396,36 @@ fun CreateHabitDialog(
                     placeholder = { Text("e.g. Read 20 mins") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = FlowOrange,
-                        focusedLabelColor = FlowOrange
+                        focusedBorderColor = colors.accent,
+                        focusedLabelColor = colors.accent,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
                     ),
+                    shape = RoundedCornerShape(shapes.sm),
                     modifier = Modifier.fillMaxWidth().testTag("habit_title_input")
                 )
 
-                Text("Category", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = "CATEGORY",
+                    style = FlowTheme.typography.labelSmall,
+                    color = colors.textMuted
+                )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(categories) { cat ->
                         val isSelected = category == cat
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) FlowOrange else MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(RoundedCornerShape(shapes.xs))
+                                .background(if (isSelected) colors.accentContainer else colors.surfaceElevated)
+                                .border(1.dp, if (isSelected) colors.accent else colors.border, RoundedCornerShape(shapes.xs))
                                 .clickable { category = cat }
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = cat,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface
+                                style = FlowTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = if (isSelected) colors.onAccentContainer else colors.textSecondary
                             )
                         }
                     }
@@ -400,44 +436,57 @@ fun CreateHabitDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Target Frequency", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = "TARGET FREQUENCY",
+                        style = FlowTheme.typography.labelSmall,
+                        color = colors.textMuted
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
+                        FlowIconButton(
+                            icon = Icons.Default.Add,
+                            contentDescription = "Decrease",
                             onClick = { if (targetDays > 1) targetDays-- },
-                            enabled = targetDays > 1
-                        ) {
-                            Text("–", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Text("$targetDays days/wk", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        IconButton(
+                            size = 28.dp,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Text(
+                            text = "$targetDays d/wk",
+                            style = FlowTheme.typography.titleMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = colors.textPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        FlowIconButton(
+                            icon = Icons.Default.Add,
+                            contentDescription = "Increase",
                             onClick = { if (targetDays < 7) targetDays++ },
-                            enabled = targetDays < 7
-                        ) {
-                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        }
+                            size = 28.dp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
             }
         },
         confirmButton = {
-            Button(
+            FlowButton(
+                text = "Create Habit",
                 onClick = {
                     if (title.isNotBlank()) {
                         onConfirm(title.trim(), category, targetDays)
                     }
                 },
                 enabled = title.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = FlowOrange, contentColor = Color.Black),
                 modifier = Modifier.testTag("confirm_create_habit_button")
-            ) {
-                Text("Create Habit")
-            }
+            )
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Cancel", color = colors.textSecondary)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(shapes.lg)
     )
 }
