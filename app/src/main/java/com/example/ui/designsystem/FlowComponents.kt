@@ -414,7 +414,6 @@ fun FlowCustomizationSheet(
     if (!isOpen) return
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val state = FlowTheme.state
     val colors = FlowTheme.colors
 
     ModalBottomSheet(
@@ -424,12 +423,23 @@ fun FlowCustomizationSheet(
         contentColor = colors.textPrimary,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp)
-        ) {
+        FlowCustomizationContent(onDismiss = onDismiss)
+    }
+}
+
+@Composable
+fun FlowCustomizationContent(
+    onDismiss: () -> Unit
+) {
+    val state = FlowTheme.state
+    val colors = FlowTheme.colors
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 36.dp)
+    ) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -599,5 +609,4 @@ fun FlowCustomizationSheet(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-    }
 }

@@ -205,167 +205,183 @@ fun AuthScreen(
             .fillMaxSize()
             .background(colors.background)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(28.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // App Minimalist Brand Icon
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(shapes.md))
-                    .background(colors.accentContainer)
-                    .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(shapes.md)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Bolt,
-                    contentDescription = "FlowPulse Logo",
-                    tint = colors.onAccentContainer,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "FlowPulse",
-                style = FlowTheme.typography.display.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
-                ),
-                color = colors.textPrimary
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Focus Deeply. Build Streaks. Ship Daily.",
-                style = FlowTheme.typography.bodyMedium,
-                color = colors.textSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 28.dp)
-            )
-
-            // Features Card
-            FlowCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(shapes.xl),
-                backgroundColor = colors.surface,
-                borderColor = colors.border
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    FeatureRow(
-                        icon = Icons.Default.Timer,
-                        iconTint = colors.accent,
-                        title = "Smart Focus Timer",
-                        subtitle = "Tactile Pomodoro intervals with custom presets"
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    FeatureRow(
-                        icon = Icons.Default.CheckCircle,
-                        iconTint = colors.priorityMedium,
-                        title = "Priority Task Queue",
-                        subtitle = "Organize deep work and calculate estimated pomodoros"
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    FeatureRow(
-                        icon = Icons.Default.LocalFireDepartment,
-                        iconTint = colors.priorityHigh,
-                        title = "Habit Streak Engine",
-                        subtitle = "Build lasting discipline with daily visual progress"
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    FeatureRow(
-                        icon = Icons.Default.CloudDone,
-                        iconTint = colors.success,
-                        title = "Cloud & Offline Modes",
-                        subtitle = "Seamless guest mode or real-time Firestore sync"
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Google Sign-In Button
-            Surface(
-                onClick = {
-                    isLoading = true
-                    onGoogleSignInClicked(
-                        context = context,
-                        credentialManager = credentialManager,
-                        onAuthSuccess = {
-                            isLoading = false
-                            onAuthSuccess()
-                        },
-                        onAuthError = { errorMsg ->
-                            isLoading = false
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(errorMsg)
-                            }
-                        },
-                        scope = coroutineScope,
-                        onAuthCancelled = {
-                            isLoading = false
+        AuthScreenContent(
+            isLoading = isLoading,
+            onGoogleSignIn = {
+                isLoading = true
+                onGoogleSignInClicked(
+                    context = context,
+                    credentialManager = credentialManager,
+                    onAuthSuccess = {
+                        isLoading = false
+                        onAuthSuccess()
+                    },
+                    onAuthError = { errorMsg ->
+                        isLoading = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(errorMsg)
                         }
-                    )
-                },
-                enabled = !isLoading,
-                shape = RoundedCornerShape(shapes.md),
-                color = colors.accent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .testTag("google_sign_in_button")
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = colors.onAccent,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Bolt,
-                                contentDescription = null,
-                                tint = colors.onAccent,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Sign in with Google",
-                                style = FlowTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = colors.onAccent
-                            )
-                        }
+                    },
+                    scope = coroutineScope,
+                    onAuthCancelled = {
+                        isLoading = false
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Continue as Guest Button
-            FlowButton(
-                text = "Continue as Guest",
-                onClick = onGuestLogin,
-                variant = FlowButtonVariant.SECONDARY,
-                icon = Icons.Default.PersonOutline,
-                enabled = !isLoading,
-                height = 52.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("guest_mode_button")
-            )
-        }
+                )
+            },
+            onGuestLogin = onGuestLogin
+        )
 
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+fun AuthScreenContent(
+    isLoading: Boolean = false,
+    onGoogleSignIn: () -> Unit = {},
+    onGuestLogin: () -> Unit = {}
+) {
+    val colors = FlowTheme.colors
+    val shapes = FlowTheme.shapes
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(28.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // App Minimalist Brand Icon
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(shapes.md))
+                .background(colors.accentContainer)
+                .border(1.dp, colors.accent.copy(alpha = 0.4f), RoundedCornerShape(shapes.md)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Bolt,
+                contentDescription = "FlowPulse Logo",
+                tint = colors.onAccentContainer,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "FlowPulse",
+            style = FlowTheme.typography.display.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp
+            ),
+            color = colors.textPrimary
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Focus Deeply. Build Streaks. Ship Daily.",
+            style = FlowTheme.typography.bodyMedium,
+            color = colors.textSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 28.dp)
+        )
+
+        // Features Card
+        FlowCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(shapes.xl),
+            backgroundColor = colors.surface,
+            borderColor = colors.border
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                FeatureRow(
+                    icon = Icons.Default.Timer,
+                    iconTint = colors.accent,
+                    title = "Smart Focus Timer",
+                    subtitle = "Tactile Pomodoro intervals with custom presets"
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                FeatureRow(
+                    icon = Icons.Default.CheckCircle,
+                    iconTint = colors.priorityMedium,
+                    title = "Priority Task Queue",
+                    subtitle = "Organize deep work and calculate estimated pomodoros"
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                FeatureRow(
+                    icon = Icons.Default.LocalFireDepartment,
+                    iconTint = colors.priorityHigh,
+                    title = "Habit Streak Engine",
+                    subtitle = "Build lasting discipline with daily visual progress"
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                FeatureRow(
+                    icon = Icons.Default.CloudDone,
+                    iconTint = colors.success,
+                    title = "Cloud & Offline Modes",
+                    subtitle = "Seamless guest mode or real-time Firestore sync"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // Google Sign-In Button
+        Surface(
+            onClick = onGoogleSignIn,
+            enabled = !isLoading,
+            shape = RoundedCornerShape(shapes.md),
+            color = colors.accent,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("google_sign_in_button")
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = colors.onAccent,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = colors.onAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Sign in with Google",
+                            style = FlowTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = colors.onAccent
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Continue as Guest Button
+        FlowButton(
+            text = "Continue as Guest",
+            onClick = onGuestLogin,
+            variant = FlowButtonVariant.SECONDARY,
+            icon = Icons.Default.PersonOutline,
+            enabled = !isLoading,
+            height = 52.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("guest_mode_button")
         )
     }
 }

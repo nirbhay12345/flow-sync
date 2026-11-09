@@ -89,7 +89,7 @@ enum class AppTab(val title: String, val icon: ImageVector) {
     HABITS("Habits", Icons.Default.LocalFireDepartment),
     ANALYTICS("Insights", Icons.Default.Insights)
 }
-
+xx
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
