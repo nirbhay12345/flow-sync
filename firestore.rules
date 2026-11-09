@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.dailyFocusGoalMinutes is int && data.dailyFocusGoalMinutes >= 10 && data.dailyFocusGoalMinutes <= 600;
+    }
+
+    function isValidTask(data) {
+      return data.userId is string &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 1000)) &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             (data.priority in ['low', 'medium', 'high']) &&
+             data.estimatedPomodoros is int && data.estimatedPomodoros >= 1 && data.estimatedPomodoros <= 20 &&
+             data.completedPomodoros is int && data.completedPomodoros >= 0 && data.completedPomodoros <= 100 &&
+             data.isCompleted is bool &&
+             (!('dueDate' in data) || data.dueDate == null || (data.dueDate is string && data.dueDate.size() <= 30));
+    }
+
+    function isValidHabit(data) {
+      return data.userId is string &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             data.targetDaysPerWeek is int && data.targetDaysPerWeek >= 1 && data.targetDaysPerWeek <= 7 &&
+             data.currentStreak is int && data.currentStreak >= 0 &&
+             data.bestStreak is int && data.bestStreak >= 0 &&
+             (!('lastCompletedDate' in data) || data.lastCompletedDate == null || (data.lastCompletedDate is string && data.lastCompletedDate.size() <= 30)) &&
+             (!('completedDates' in data) || (data.completedDates is list && data.completedDates.size() <= 100 && (data.completedDates.size() == 0 || data.completedDates[0] is string)));
+    }
+
+    function isValidFocusSession(data) {
+      return data.userId is string &&
+             data.taskTitle is string && data.taskTitle.size() <= 200 &&
+             data.category is string && data.category.size() <= 50 &&
+             data.durationMinutes is int && data.durationMinutes >= 1 && data.durationMinutes <= 180 &&
+             (data.type in ['focus', 'short_break', 'long_break']) &&
+             data.completedAt is timestamp && data.completedAt <= request.time &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       incoming().userId == userId &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'dailyFocusGoalMinutes', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'dailyFocusGoalMinutes', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'dailyFocusGoalMinutes', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+      // Tasks subcollection
+      match /tasks/{taskId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(taskId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().keys().hasAll(['userId', 'title', 'category', 'priority', 'estimatedPomodoros', 'completedPomodoros', 'isCompleted', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'description', 'category', 'priority', 'estimatedPomodoros', 'completedPomodoros', 'isCompleted', 'dueDate', 'createdAt', 'updatedAt']) &&
+                         isValidTask(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(taskId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'priority', 'estimatedPomodoros', 'completedPomodoros', 'isCompleted', 'dueDate', 'updatedAt']) &&
+                         isValidTask(incoming());
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(taskId);
+      }
+
+      // Habits subcollection
+      match /habits/{habitId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(habitId) &&
+                         incoming().userId == userId &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().keys().hasAll(['userId', 'title', 'category', 'targetDaysPerWeek', 'currentStreak', 'bestStreak', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'category', 'targetDaysPerWeek', 'currentStreak', 'bestStreak', 'lastCompletedDate', 'completedDates', 'createdAt', 'updatedAt']) &&
+                         isValidHabit(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(habitId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'targetDaysPerWeek', 'currentStreak', 'bestStreak', 'lastCompletedDate', 'completedDates', 'updatedAt']) &&
+                         isValidHabit(incoming());
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(habitId);
+      }
+
+      // Focus sessions subcollection
+      match /sessions/{sessionId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(sessionId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'taskTitle', 'category', 'durationMinutes', 'type', 'completedAt', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'taskTitle', 'category', 'durationMinutes', 'type', 'completedAt', 'createdAt']) &&
+                         isValidFocusSession(incoming());
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(sessionId);
+      }
+    }
+  }
+}

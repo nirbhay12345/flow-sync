@@ -1,0 +1,6 @@
+{
+  "name": "FlowPulse",
+  "description": "Smart productivity tracker with tasks, habits, Pomodoro focus timer, and analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

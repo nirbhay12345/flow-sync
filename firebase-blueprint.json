@@ -1,0 +1,196 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and productivity configuration",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user UID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "dailyFocusGoalMinutes": {
+          "type": "integer",
+          "description": "Target daily focus time in minutes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via server timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp via server timestamp"
+        }
+      },
+      "required": ["userId", "displayName", "dailyFocusGoalMinutes", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A productivity task item",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of task owner"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the task"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional notes or details"
+        },
+        "category": {
+          "type": "string",
+          "description": "Task category (e.g. Work, Study, Personal, Health)"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Task priority level"
+        },
+        "estimatedPomodoros": {
+          "type": "integer",
+          "description": "Target pomodoro focus cycles"
+        },
+        "completedPomodoros": {
+          "type": "integer",
+          "description": "Completed pomodoro cycles"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Completion state"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Optional due date formatted as YYYY-MM-DD"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp"
+        }
+      },
+      "required": ["userId", "title", "category", "priority", "estimatedPomodoros", "completedPomodoros", "isCompleted", "createdAt", "updatedAt"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A recurring habit to track streaks and daily progress",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of habit owner"
+        },
+        "title": {
+          "type": "string",
+          "description": "Habit title"
+        },
+        "category": {
+          "type": "string",
+          "description": "Habit category"
+        },
+        "targetDaysPerWeek": {
+          "type": "integer",
+          "description": "Weekly frequency goal (1 to 7)"
+        },
+        "currentStreak": {
+          "type": "integer",
+          "description": "Current consecutive streak days"
+        },
+        "bestStreak": {
+          "type": "integer",
+          "description": "Longest consecutive streak days"
+        },
+        "lastCompletedDate": {
+          "type": "string",
+          "description": "YYYY-MM-DD of last completion date"
+        },
+        "completedDates": {
+          "type": "array",
+          "description": "List of recent completion dates"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp"
+        }
+      },
+      "required": ["userId", "title", "category", "targetDaysPerWeek", "currentStreak", "bestStreak", "createdAt", "updatedAt"]
+    },
+    "FocusSession": {
+      "title": "FocusSession",
+      "description": "Logged focus or break timer session",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the session owner"
+        },
+        "taskTitle": {
+          "type": "string",
+          "description": "Associated task title or session description"
+        },
+        "category": {
+          "type": "string",
+          "description": "Session category"
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Length of session in minutes"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["focus", "short_break", "long_break"],
+          "description": "Type of pomodoro session"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when session finished"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["userId", "taskTitle", "category", "durationMinutes", "type", "completedAt", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile with daily goals"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Tasks owned by user"
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": { "$ref": "#/entities/Habit" },
+      "description": "Habits and streak records owned by user"
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/FocusSession" },
+      "description": "Completed focus and timer sessions for analytics"
+    }
+  }
+}

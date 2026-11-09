@@ -1,0 +1,313 @@
+package com.example
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.repository.ProductivityRepository
+import com.example.ui.auth.AuthScreen
+import com.example.ui.auth.signOut
+import com.example.ui.screens.AnalyticsScreen
+import com.example.ui.screens.HabitsScreen
+import com.example.ui.screens.TasksScreen
+import com.example.ui.screens.TimerScreen
+import com.example.ui.theme.FlowCyan
+import com.example.ui.theme.FlowOrange
+import com.example.ui.theme.FlowViolet
+import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.viewmodel.ProductivityViewModel
+import com.example.ui.viewmodel.ProductivityViewModelFactory
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+
+enum class AppTab(val title: String, val icon: ImageVector) {
+    TIMER("Focus", Icons.Default.Timer),
+    TASKS("Tasks", Icons.Default.Checklist),
+    HABITS("Habits", Icons.Default.LocalFireDepartment),
+    ANALYTICS("Insights", Icons.Default.Insights)
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            MyApplicationTheme {
+                AppRoot()
+            }
+        }
+    }
+}
+
+@Composable
+fun AppRoot() {
+    var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser = auth.currentUser
+        }
+        Firebase.auth.addAuthStateListener(listener)
+        onDispose {
+            Firebase.auth.removeAuthStateListener(listener)
+        }
+    }
+
+    if (currentUser == null) {
+        AuthScreen(
+            onAuthSuccess = { currentUser = Firebase.auth.currentUser }
+        )
+    } else {
+        val uid = currentUser!!.uid
+        key(uid) {
+            MainFeatureScreen(
+                currentUserId = uid,
+                userEmail = currentUser?.email ?: "user@flowpulse.app",
+                userDisplayName = currentUser?.displayName ?: "Champion"
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainFeatureScreen(
+    currentUserId: String,
+    userEmail: String,
+    userDisplayName: String
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = remember { CredentialManager.create(context) }
+    val repository = remember(currentUserId) { ProductivityRepository(context) }
+    val viewModel: ProductivityViewModel = viewModel(
+        key = currentUserId,
+        factory = ProductivityViewModelFactory(repository)
+    )
+
+    var currentTab by remember { mutableStateOf(AppTab.TIMER) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
+
+    val tasks by viewModel.tasks.collectAsStateWithLifecycle()
+    val habits by viewModel.habits.collectAsStateWithLifecycle()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val timerState by viewModel.timerState.collectAsStateWithLifecycle()
+
+    BackHandler(enabled = currentTab != AppTab.TIMER) {
+        currentTab = AppTab.TIMER
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(FlowCyan),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "FlowPulse",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showSignOutDialog = true },
+                        modifier = Modifier.testTag("sign_out_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Sign Out",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        bottomBar = {
+            NavigationBar(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .testTag("bottom_nav_bar"),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                AppTab.values().forEach { tab ->
+                    val isSelected = currentTab == tab
+                    NavigationBarItem(
+                        selected = isSelected,
+                        onClick = { currentTab = tab },
+                        icon = {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.title
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = tab.title,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.Black,
+                            selectedTextColor = FlowCyan,
+                            indicatorColor = FlowCyan,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
+                    )
+                }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Crossfade(targetState = currentTab, label = "tab_fade") { tab ->
+                when (tab) {
+                    AppTab.TIMER -> TimerScreen(
+                        timerState = timerState,
+                        sessions = sessions,
+                        onToggleTimer = { viewModel.toggleTimer() },
+                        onResetTimer = { viewModel.resetTimer() },
+                        onSelectMode = { viewModel.selectTimerMode(it) },
+                        onUnlinkTask = { viewModel.unlinkTask() },
+                        onNavigateToTasks = { currentTab = AppTab.TASKS }
+                    )
+                    AppTab.TASKS -> TasksScreen(
+                        tasks = tasks,
+                        onToggleTaskCompletion = { viewModel.toggleTaskCompletion(it) },
+                        onDeleteTask = { viewModel.deleteTask(it) },
+                        onStartFocusForTask = { task ->
+                            viewModel.linkTaskToTimer(task)
+                            currentTab = AppTab.TIMER
+                        },
+                        onCreateTask = { title, desc, cat, priority, pomodoros, dueDate ->
+                            viewModel.createTask(title, desc, cat, priority, pomodoros, dueDate)
+                        }
+                    )
+                    AppTab.HABITS -> HabitsScreen(
+                        habits = habits,
+                        onToggleHabitToday = { viewModel.toggleHabitToday(it) },
+                        onDeleteHabit = { viewModel.deleteHabit(it) },
+                        onCreateHabit = { title, category, days ->
+                            viewModel.createHabit(title, category, days)
+                        }
+                    )
+                    AppTab.ANALYTICS -> AnalyticsScreen(
+                        tasks = tasks,
+                        habits = habits,
+                        sessions = sessions,
+                        profile = profile
+                    )
+                }
+            }
+        }
+    }
+
+    if (showSignOutDialog) {
+        AlertDialog(
+            onDismissRequest = { showSignOutDialog = false },
+            title = { Text("Sign Out") },
+            text = { Text("Signed in as $userEmail ($userDisplayName). Are you sure you want to sign out?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSignOutDialog = false
+                        signOut(credentialManager, coroutineScope)
+                    }
+                ) {
+                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+}
